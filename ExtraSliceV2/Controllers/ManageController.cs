@@ -32,8 +32,8 @@ namespace ExtraSliceV2.Controllers
 
                 HttpContext.Session.SetString("TOKEN", token);
                 ClaimsIdentity identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
-                identity.AddClaim(new Claim(ClaimTypes.Name, email));
-                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, password));
+                //identity.AddClaim(new Claim(ClaimTypes.Name, email));
+                //identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, password));
                 ClaimsPrincipal usePrincipal = new ClaimsPrincipal(identity);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, usePrincipal, new AuthenticationProperties
                 {

@@ -2,9 +2,9 @@
 using ExtraSliceV2.Filters;
 using ExtraSliceV2.Helpers;
 using ExtraSliceV2.Models;
-using ExtraSliceV2.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using MVCApiExtraSlice.Services;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -14,12 +14,12 @@ namespace ExtraSliceV2.Controllers
 {
     public class CartaController : Controller
     {
-        private RepositoryRestaurante repo;
+        private ServiceRestaurante service;
         private IMemoryCache memoryCache;
         private HelperMail helperMail;
-        public CartaController(RepositoryRestaurante repo, IMemoryCache memoryCache, HelperMail helperMail)
+        public CartaController(ServiceRestaurante service, IMemoryCache memoryCache, HelperMail helperMail)
         {
-            this.repo = repo;
+            this.service = service;
             this.memoryCache = memoryCache;
             this.helperMail = helperMail;
         }
@@ -31,30 +31,30 @@ namespace ExtraSliceV2.Controllers
         }
 
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            List<Categoria> categorias = this.repo.GetAllCategorias();
+            List<Categoria> categorias = await this.service.GetAllCategoriasAsync();
             return View(categorias);
         }
      
         ////////////////////////////////////////////////////////////////Vistas Partiales RESTAURANTES
 
-        public IActionResult _RestaurantesPartial()
+        public async Task<IActionResult> _RestaurantesPartial()
         {
-            List<Restaurante> restaurantes = this.repo.GetRestaurantes();
+            List<Restaurante> restaurantes = await this.service.GetRestaurantesAsync();
             return PartialView("_RestaurantesPartial", restaurantes);
         }
 
 
-        public IActionResult _ResaturanteOnCategoria(int idcategoria)
+        public async Task<IActionResult> _ResaturanteOnCategoria(int idcategoria)
         {
-            List<Restaurante> restaurantes = this.repo.FindRestauranteOnCategoria(idcategoria);
+            List<Restaurante> restaurantes = await this.service.RestaurantesByCategoriaAsync(idcategoria);
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
 
-        public IActionResult _RestaurantesByDinero(int dinero)
+        public async Task<IActionResult> _RestaurantesByDinero(int dinero)
         {
-            List<Restaurante> restaurantes = this.repo.GetRestaurantesByDinero(dinero);
+            List<Restaurante> restaurantes = await this.service.RestaurantesByMoneyAsync(dinero);
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
         
