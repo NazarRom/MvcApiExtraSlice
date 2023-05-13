@@ -15,7 +15,7 @@ namespace MVCApiExtraSlice.Services
         public ServiceRestaurante(IConfiguration configuration)
         {
             this.Header = new MediaTypeWithQualityHeaderValue("application/json");
-            this.UrlApi = configuration.GetValue<string>("ApiUrl:ApiCubos");
+            this.UrlApi = configuration.GetValue<string>("ApiUrl:ApiExtraSlice");
         }
         //get token
         public async Task<string> GetTokenAsync
@@ -124,11 +124,11 @@ namespace MVCApiExtraSlice.Services
             List<Restaurante> restaurantes = await this.CallApiAsync<List<Restaurante>>(request);
             return restaurantes;
         }
-        public async Task<List<Restaurante>> RestaurantesByNameAsync(string name)
+        public async Task<Restaurante> RestauranteByNameAsync(string name)
         {
-            string request = "api/restaurantes/restaurantesbyname/" + name;
-            List<Restaurante> restaurantes = await this.CallApiAsync<List<Restaurante>>(request);
-            return restaurantes;
+            string request = "api/restaurantes/restaurantebyname/" + name;
+            Restaurante restaurante = await this.CallApiAsync<Restaurante>(request);
+            return restaurante;
         }
         #endregion
 
@@ -173,9 +173,9 @@ namespace MVCApiExtraSlice.Services
         }
 
         //get productos by restaurant
-        public async Task<List<Producto>> ProductosByRestauranIdAsync(int id)
+        public async Task<List<Producto>> FindProductosByRestauranIdAsync(int id)
         {
-            string request = "api/FindProductosbyrestaurantid/" + id;
+            string request = "api/Productos/FindProductosByRestaurantId/" + id;
             List<Producto> productos = await this.CallApiAsync<List<Producto>>(request);
             return productos;
 
@@ -184,7 +184,7 @@ namespace MVCApiExtraSlice.Services
         //find producto en concreto
         public async Task<Producto> FindProductoAsync(int id)
         {
-            string request = "api/FindProducto";
+            string request = "api/productos/findproducto/"+ id;
             Producto producto = await this.CallApiAsync<Producto>(request);
             return producto;
         }

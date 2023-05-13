@@ -1,26 +1,11 @@
-﻿@model List<Producto>
-@{
+﻿@using Microsoft.Extensions.Caching.Memory;
+@inject IMemoryCache memoryCache
+@model List<Producto>
 
-    List<int> idsProductos = Context.Session.GetObject<List<int>>("IdProductos");
-
-    decimal total = 0;
-    @if (Model != null)
-    {
-        foreach (Producto pro in Model)
-        {
-            total += pro.Precio;
-        }
-    }
-}
-@if (Context.Session.GetObject<List<int>>("FAVORITOS") == null)
-{
-    <h1 style="text-align:center;font-family: Raleway;">No hay Favoritos</h1>
-}
 
 @if(Model != null)
 {
     
-
 <div class="shopping-cart">
     <!-- Title -->
     @foreach (Producto pro in Model)
@@ -42,12 +27,12 @@
                 <input class="form-control" type="hidden" name="precio" value="@pro.Precio" />
             </div>
 
-           
-            <a asp-controller="Carta" asp-action="CarritoProductos" asp-route-ideliminar="@pro.IdProducto" class="delete-btn"><img src="~/images/remove.png" /></a>
-
+                <a asp-controller="Carta" asp-action="Favoritos" asp-route-ideliminar="@pro.IdProducto" class="delete-btn"><img src="~/images/remove.png" /></a>
         </div>
     }
    
    
 </div>
+}else{
+    <h1 style="text-align:center;font-family: Raleway;">No hay Favoritos</h1>
 }

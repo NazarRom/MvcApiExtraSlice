@@ -25,9 +25,11 @@ namespace ExtraSliceV2.Controllers
         }
         //miedo
         [AuthorizeUsuarios]
-        public IActionResult PerfilUsuario()
+        public async Task<IActionResult> PerfilUsuario()
         {
-            return View();
+            string token = HttpContext.Session.GetString("TOKEN");
+            Usuario user = await this.service.GetPerfilUserAsync(token);
+            return View(user);
         }
 
 
@@ -58,16 +60,16 @@ namespace ExtraSliceV2.Controllers
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
         
-        public IActionResult _RestauranteByName(string name)
+        public async Task<IActionResult> _RestauranteByName(string name)
         {
-            List<Restaurante> restaurantes = this.repo.GetRestaurantes();
+            List<Restaurante> restaurantes = await this.service.GetRestaurantesAsync();
             //var result = restaurantes.Where(r => r.Nombre_restaurante.Contains(name)).ToList();
             var result = restaurantes.Where(x => x.Nombre_restaurante.StartsWith(name, StringComparison.OrdinalIgnoreCase)).Select(x => x.Nombre_restaurante);
             return Json(result);
         }
-        public IActionResult _ShowRestauranteByName(string name)
+        public async Task<IActionResult> _ShowRestauranteByName(string name)
         {
-            Restaurante restaurante = this.repo.GetRestauranteByName(name);
+            Restaurante restaurante = await this.service.RestauranteByNameAsync(name);
             return PartialView("_ShowRestauranteByName", restaurante);
         }
 
@@ -75,7 +77,7 @@ namespace ExtraSliceV2.Controllers
 
 
         [AuthorizeUsuarios]
-        public IActionResult CarritoProductos(int? ideliminar)
+        public async Task<IActionResult> CarritoProductos(int? ideliminar)
         {
             //tenemos una coleccion de ids y necesitamos
             //recuperamos los datos de session
@@ -104,8 +106,8 @@ namespace ExtraSliceV2.Controllers
                         HttpContext.Session.SetObject("IdProductos", idsProductos);
                     }
                 }
-
-                List<Producto> productosSession = this.repo.GetProductosSession(idsProductos);
+                string token = HttpContext.Session.GetString("TOKEN");
+                List<Producto> productosSession = await this.service.GetProductosFromSessionAsync(idsProductos, token);
                 return View(productosSession);
 
             }
@@ -115,7 +117,8 @@ namespace ExtraSliceV2.Controllers
         [AuthorizeUsuarios]
         public async Task<IActionResult> CarritoProductos(int idcliente, List<int> idproducto, List<int> cantidad)
         {
-            List<Producto> productosSession = this.repo.GetProductosSession(idproducto);
+            string token = HttpContext.Session.GetString("TOKEN");
+            List<Producto> productosSession = await this.service.GetProductosFromSessionAsync(idproducto, token);
             string productostring = JsonConvert.SerializeObject(productosSession);
 
             List<int> prodCantidad = cantidad;
@@ -125,12 +128,13 @@ namespace ExtraSliceV2.Controllers
             await this.helperMail.SendMailAsync(email, productostring, prodCanString);
 
 
-            await this.repo.FinalizarPedido(idcliente, idproducto, cantidad);
+            await this.service.FinalizarPedidoAsync(idcliente, idproducto, cantidad, token);
             HttpContext.Session.Remove("IdProductos");
             return RedirectToAction("Index");
         }
 
 
+        
         [AuthorizeUsuarios]
         public IActionResult Favoritos(int? ideliminar)
         {
@@ -150,7 +154,7 @@ namespace ExtraSliceV2.Controllers
                     if (productosFavoritos.Count == 0)
                     {
                         this.memoryCache.Remove("FAVORITOS");
-
+                        ViewData["mensaje"] = "No hay favoritos";
                     }
                     else
                     {
@@ -166,7 +170,7 @@ namespace ExtraSliceV2.Controllers
         }
 
 
-        public IActionResult Restaurante(int idrestaurante, int? idproducto, int? idfavorito)
+        public async Task<IActionResult> Restaurante(int idrestaurante, int? idproducto, int? idfavorito)
         {
             if (idfavorito != null)
             {
@@ -180,7 +184,7 @@ namespace ExtraSliceV2.Controllers
                     productoFavoritos = this.memoryCache.Get<List<Producto>>("FAVORITOS");
                 }
                 //BUSCAMOS PRODUCTO EN BBDD PARA ALMACENARLO EN CACHE
-                Producto producto = this.repo.FindProducto(idfavorito.Value);
+                Producto producto = await this.service.FindProductoAsync(idfavorito.Value);
 
 
                 Producto productFav = productoFavoritos.FirstOrDefault(p => p.IdProducto == idfavorito);
@@ -193,7 +197,6 @@ namespace ExtraSliceV2.Controllers
                 }
 
             }
-
 
             if (idproducto != null)
             {
@@ -214,8 +217,8 @@ namespace ExtraSliceV2.Controllers
             //RestauranteProductos restauranteProductos = this.repo.RestProduct(idrestaurante.Value);
             RestauranteProductos restauranteProductos = new RestauranteProductos
             {
-                Restaurante = this.repo.FindRestaurante(idrestaurante),
-                Productos = this.repo.FindProductos(idrestaurante)
+                Restaurante = await this.service.GetOneRestauranteAsync(idrestaurante),
+                Productos = await this.service.FindProductosByRestauranIdAsync(idrestaurante)
             };
             return View(restauranteProductos);
         }
@@ -229,16 +232,12 @@ namespace ExtraSliceV2.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(Usuario usuario)
         {
-            await this.repo.RegisterUser(usuario.Nombre_cliente, usuario.Direccion, usuario.Telefono, usuario.Email, usuario.Password);
+            await this.service.RegisterUserAsync(usuario.Nombre_cliente, usuario.Direccion, usuario.Telefono, usuario.Email, usuario.Password);
             return RedirectToAction("Index");
         }
 
 
-        public async Task<IActionResult> CancelarPedido()
-        {
-          await this.repo.CancelarPedido();
-            return RedirectToAction("CarritoProductos");
-        }
+       
 
        
 
