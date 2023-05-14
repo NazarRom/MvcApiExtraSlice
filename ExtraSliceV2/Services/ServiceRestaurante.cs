@@ -1,8 +1,12 @@
-﻿using ExtraSliceV2.Models;
+﻿using Azure.Security.KeyVault.Secrets;
+using Azure.Storage.Blobs;
+using Azure.Storage.Sas;
+using ExtraSliceV2.Models;
 using MVCApiExtraSlice.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
+using System.Security.Policy;
 using System.Text;
 
 namespace MVCApiExtraSlice.Services
@@ -10,15 +14,96 @@ namespace MVCApiExtraSlice.Services
     public class ServiceRestaurante
     {
         private MediaTypeWithQualityHeaderValue Header;
+        private BlobServiceClient blobClient;
+        private SecretClient secretClient;
         private string UrlApi;
 
-        public ServiceRestaurante(IConfiguration configuration)
+        public ServiceRestaurante(SecretClient secretClient, BlobServiceClient blobClient)
         {
             this.Header = new MediaTypeWithQualityHeaderValue("application/json");
-            this.UrlApi = configuration.GetValue<string>("ApiUrl:ApiExtraSlice");
+            this.secretClient = secretClient;
+            this.UrlApi = secretClient.GetSecretAsync("apiurl").Result.Value.Value;
+            this.blobClient = blobClient;
         }
-        //get token
-        public async Task<string> GetTokenAsync
+
+        #region BLOBS
+        public async Task<string> GetBlobUriAsync(string container, string blobName)
+        {
+            BlobContainerClient containerClient = this.blobClient.GetBlobContainerClient(container);
+            BlobClient blobClient = containerClient.GetBlobClient(blobName);
+
+            var response = await containerClient.GetPropertiesAsync();
+            var properties = response.Value;
+
+            // Will be private if it's None
+            if (properties.PublicAccess == Azure.Storage.Blobs.Models.PublicAccessType.None)
+            {
+                Uri imageUri = blobClient.GenerateSasUri(BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddSeconds(3600));
+                return imageUri.ToString();
+            }
+
+            return blobClient.Uri.AbsoluteUri.ToString();
+        }
+        #endregion
+
+        #region MAIL
+        public async Task SendMailAsync
+        (string email, string productos, string cantidad)
+        {
+            KeyVaultSecret keyVaultSecret = await secretClient.GetSecretAsync("mailextraslice");
+            // Add services to the container.
+            string urlEmail = keyVaultSecret.Value;
+            List<Producto> prods = JsonConvert.DeserializeObject<List<Producto>>(productos);
+            List<int> cants = JsonConvert.DeserializeObject<List<int>>(cantidad);
+            string tablaHtml = "<table>";
+            tablaHtml += "<th>Producto</th>";
+            tablaHtml += "<th>Descripción</th>";
+            tablaHtml += "<th>Precio</th>";
+            tablaHtml += "<th>Cantidad</th>";
+            tablaHtml += "<th>Total</th>";
+            decimal total = 0;
+            foreach (Producto pro in prods)
+            {
+                total += pro.Precio;
+            }
+            for (var i = 0; i < prods.Count(); i++)
+            {
+                Producto prod = prods[i];
+                int cant = cants[i];
+
+                tablaHtml += "<tr>";
+                tablaHtml += "<td>" + prod.Nombre_producto + "</td>";
+                tablaHtml += "<td>" + prod.Descripcion + "</td>";
+                tablaHtml += "<td>" + prod.Precio + "€" + "</td>";
+                tablaHtml += "<td>" + cant + "</td>";
+                total += prod.Precio * (cant - 1);
+
+            }
+            tablaHtml += "<td>" + total + "€" + "</td>";
+            tablaHtml += "</tr>";
+            tablaHtml += "</table>";
+            var model = new
+            {
+                email = email,
+                asunto = "Pedido Extra Slice",
+                mensaje = tablaHtml
+            };
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Accept.Add(this.Header);
+                string json = JsonConvert.SerializeObject(model);
+                StringContent content =
+                    new StringContent(json, Encoding.UTF8, "application/json");
+                await client.PostAsync(urlEmail, content);
+            }
+        }
+
+            #endregion
+
+        #region METHODS
+            //get token
+            public async Task<string> GetTokenAsync
         (string username, string password)
         {
             using (HttpClient client = new HttpClient())
@@ -95,6 +180,8 @@ namespace MVCApiExtraSlice.Services
                 }
             }
         }
+        #endregion
+
         #region RESTAURANTES
         //get all restaurantes
         public async Task<List<Restaurante>> GetRestaurantesAsync()

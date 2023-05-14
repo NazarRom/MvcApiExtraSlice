@@ -1,6 +1,8 @@
-using ExtraSliceV2.Helpers;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using MVCApiExtraSlice.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,14 +20,28 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
 }).AddCookie();
+//habilitar keyVault
+builder.Services.AddAzureClients(factory =>
+{
+    factory.AddSecretClient(builder.Configuration.GetSection("KeyVault"));
+});
+
 // Add services to the container.
 builder.Services.AddTransient<ServiceRestaurante>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 
-//helper
-builder.Services.AddSingleton<HelperMail>();
+
+//connection to az keyvault
+SecretClient secretClient = builder.Services.BuildServiceProvider().GetService<SecretClient>();
+//get blobs connection
+KeyVaultSecret keyVaultSecret = await secretClient.GetSecretAsync("blobs");
+//blobs
+string azureKeys = keyVaultSecret.Value; ;
+BlobServiceClient blobServiceClient = new BlobServiceClient(azureKeys);
+builder.Services.AddTransient<BlobServiceClient>(x => blobServiceClient);
+
 
 var app = builder.Build();
 

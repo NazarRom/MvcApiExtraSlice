@@ -1,6 +1,5 @@
 ﻿using ExtraSliceV2.Extensions;
 using ExtraSliceV2.Filters;
-using ExtraSliceV2.Helpers;
 using ExtraSliceV2.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -16,12 +15,12 @@ namespace ExtraSliceV2.Controllers
     {
         private ServiceRestaurante service;
         private IMemoryCache memoryCache;
-        private HelperMail helperMail;
-        public CartaController(ServiceRestaurante service, IMemoryCache memoryCache, HelperMail helperMail)
+
+        public CartaController(ServiceRestaurante service, IMemoryCache memoryCache)
         {
             this.service = service;
             this.memoryCache = memoryCache;
-            this.helperMail = helperMail;
+
         }
         //miedo
         [AuthorizeUsuarios]
@@ -38,15 +37,22 @@ namespace ExtraSliceV2.Controllers
             List<Categoria> categorias = await this.service.GetAllCategoriasAsync();
             return View(categorias);
         }
-     
+
         ////////////////////////////////////////////////////////////////Vistas Partiales RESTAURANTES
 
         public async Task<IActionResult> _RestaurantesPartial()
         {
-            List<Restaurante> restaurantes = await this.service.GetRestaurantesAsync();
+            List<Restaurante> restaurantes = new List<Restaurante>();
+            restaurantes = await this.service.GetRestaurantesAsync();
+            foreach (var res in restaurantes)
+            {
+                if (res.Imagen != null)
+                {
+                    res.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", res.Imagen);
+                }
+            }
             return PartialView("_RestaurantesPartial", restaurantes);
         }
-
 
         public async Task<IActionResult> _ResaturanteOnCategoria(int idcategoria)
         {
@@ -59,7 +65,7 @@ namespace ExtraSliceV2.Controllers
             List<Restaurante> restaurantes = await this.service.RestaurantesByMoneyAsync(dinero);
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
-        
+
         public async Task<IActionResult> _RestauranteByName(string name)
         {
             List<Restaurante> restaurantes = await this.service.GetRestaurantesAsync();
@@ -124,8 +130,8 @@ namespace ExtraSliceV2.Controllers
             List<int> prodCantidad = cantidad;
             string prodCanString = JsonConvert.SerializeObject(prodCantidad);
 
-            string email = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            await this.helperMail.SendMailAsync(email, productostring, prodCanString);
+            Usuario usuario = await this.service.GetPerfilUserAsync(token);
+            await this.service.SendMailAsync(usuario.Email, productostring, prodCanString);
 
 
             await this.service.FinalizarPedidoAsync(idcliente, idproducto, cantidad, token);
@@ -134,7 +140,7 @@ namespace ExtraSliceV2.Controllers
         }
 
 
-        
+
         [AuthorizeUsuarios]
         public IActionResult Favoritos(int? ideliminar)
         {
@@ -214,14 +220,21 @@ namespace ExtraSliceV2.Controllers
                 HttpContext.Session.SetObject("IdProductos", idsProductos);
 
             }
-            //RestauranteProductos restauranteProductos = this.repo.RestProduct(idrestaurante.Value);
+
             RestauranteProductos restauranteProductos = new RestauranteProductos
             {
                 Restaurante = await this.service.GetOneRestauranteAsync(idrestaurante),
                 Productos = await this.service.FindProductosByRestauranIdAsync(idrestaurante)
             };
+
+            if (restauranteProductos.Restaurante.Imagen != null)
+            {
+                restauranteProductos.Restaurante.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", restauranteProductos.Restaurante.Imagen);
+            }
+
             return View(restauranteProductos);
         }
+
 
 
         public IActionResult Register()
@@ -237,9 +250,9 @@ namespace ExtraSliceV2.Controllers
         }
 
 
-       
 
-       
+
+
 
     }
 }
