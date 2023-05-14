@@ -182,7 +182,6 @@ input {
     width: 120px;
     background-image: none;
     padding: 8px 10px;
-    margin-bottom: 20px;
     border-radius: 6;
     -webkit-transition: all 0.5s;
     -moz-transition: all 0.5s;
@@ -222,4 +221,4 @@ input {
     border-color: #1e439b;
     box-shadow: inset 96px 0 0 0 #1e439b;
 }
-}
+

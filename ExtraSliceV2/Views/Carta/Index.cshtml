@@ -3,7 +3,7 @@
 <div class="icon-container">
     @foreach (Categoria cat in Model)
     {
-        <img src="~/images/@cat.Imagen" class="fa-arrow-up categ" data-id="@cat.IdCategoria" />
+        <img src="@cat.Imagen" class="fa-arrow-up categ" data-id="@cat.IdCategoria" />
 
         <br />
     }
@@ -16,7 +16,7 @@
 
             <a asp-controller="Carta" asp-action="Restaurante" asp-route-idrestaurante="56" class="carousel--item">
                 <img class="carousel--item__img"
-                     src="~/images/promo-burger.jpg"
+                     src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/BurgerKing.jpg"
                      alt="item" />
 
                 <div class="carousel--item__details">
@@ -37,7 +37,7 @@
 
             <a asp-controller="Carta" asp-action="Restaurante" asp-route-idrestaurante="55" class="carousel--item">
                 <img class="carousel--item__img"
-                     src="~/images/promo-goiko.jpg"
+                     src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/Goiko-Princesa26.jpg"
                      alt="item" />
 
                 <div class="carousel--item__details">
@@ -57,7 +57,7 @@
 
             <a asp-controller="Carta" asp-action="Restaurante" asp-route-idrestaurante="57" class="carousel--item">
                 <img class="carousel--item__img"
-                     src="~/images/promo-mcdonalds.jpg"
+                     src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/McDonalds.jpg"
                      alt="item" />
 
               <div class="carousel--item__details">

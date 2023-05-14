@@ -34,7 +34,15 @@ namespace ExtraSliceV2.Controllers
 
         public async Task<IActionResult> Index()
         {
-            List<Categoria> categorias = await this.service.GetAllCategoriasAsync();
+            List<Categoria> categorias = new();
+               categorias = await this.service.GetAllCategoriasAsync();
+            foreach (var cat in categorias)
+            {
+                if (cat.Imagen != null)
+                {
+                    cat.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", cat.Imagen);
+                }
+            }
             return View(categorias);
         }
 
@@ -56,13 +64,31 @@ namespace ExtraSliceV2.Controllers
 
         public async Task<IActionResult> _ResaturanteOnCategoria(int idcategoria)
         {
-            List<Restaurante> restaurantes = await this.service.RestaurantesByCategoriaAsync(idcategoria);
+            
+            List<Restaurante> restaurantes = new List<Restaurante>();
+            restaurantes = await this.service.RestaurantesByCategoriaAsync(idcategoria); ;
+            foreach (var res in restaurantes)
+            {
+                if (res.Imagen != null)
+                {
+                    res.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", res.Imagen);
+                }
+            }
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
 
         public async Task<IActionResult> _RestaurantesByDinero(int dinero)
         {
-            List<Restaurante> restaurantes = await this.service.RestaurantesByMoneyAsync(dinero);
+            
+            List<Restaurante> restaurantes = new List<Restaurante>();
+            restaurantes = await this.service.RestaurantesByMoneyAsync(dinero);
+            foreach (var res in restaurantes)
+            {
+                if (res.Imagen != null)
+                {
+                    res.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", res.Imagen);
+                }
+            }
             return PartialView("_ResaturanteOnCategoria", restaurantes);
         }
 
@@ -76,6 +102,12 @@ namespace ExtraSliceV2.Controllers
         public async Task<IActionResult> _ShowRestauranteByName(string name)
         {
             Restaurante restaurante = await this.service.RestauranteByNameAsync(name);
+
+            if (restaurante.Imagen != null)
+            {
+                restaurante.Imagen = await this.service.GetBlobUriAsync("extrasliceblobs", restaurante.Imagen);
+            }
+
             return PartialView("_ShowRestauranteByName", restaurante);
         }
 
