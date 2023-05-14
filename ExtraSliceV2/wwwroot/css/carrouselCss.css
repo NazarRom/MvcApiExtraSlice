@@ -35,7 +35,7 @@ nav {
 .navbar {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit,minmax(350px,1fr));
     grid-gap: 10px;
     /*background-color: lightsalmon;*/
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
