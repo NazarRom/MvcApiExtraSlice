@@ -1,4 +1,5 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using ApiProyectoExtraSlice.Models;
+using Azure.Security.KeyVault.Secrets;
 using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
 using ExtraSliceV2.Models;
@@ -288,13 +289,13 @@ namespace MVCApiExtraSlice.Services
                 client.DefaultRequestHeaders.Accept.Add(this.Header);
                 //tenemos que enviar un objeto JSON
                 //nos creamos un objeto de la clase Hospital
-                Usuario usuario = new Usuario
+                UsuarioAux usuario = new UsuarioAux
                 {
-                    Nombre_cliente = nombre,
-                    Direccion = direccion,
-                    Telefono = telefono,
-                    Email = email,
-                    Password = pass
+                   Nombre_cliente = nombre,
+                   Direccion = direccion,
+                   Telefono = telefono,
+                   Email = email,
+                   Password = pass
                     
                 };
                 //convertimos el objeto a json
@@ -324,7 +325,7 @@ namespace MVCApiExtraSlice.Services
         {
             using (HttpClient client = new HttpClient())
             {
-                string request = "api/Productos/getproductosfromsession";
+                string request = "api/Carta/FinalizarPedido";
                 client.BaseAddress = new Uri(this.UrlApi);
                 client.DefaultRequestHeaders.Clear();
                 client.DefaultRequestHeaders.Accept.Add(this.Header);

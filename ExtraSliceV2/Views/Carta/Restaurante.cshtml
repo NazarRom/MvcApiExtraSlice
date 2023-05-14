@@ -41,20 +41,20 @@
                     @* <button class="miBoton" value="@pro.IdProducto">Añadir Producto</button>*@
                     @* <a asp-controller="Carta" asp-action="Restaurante" asp-route-idrestaurante="@pro.IdRestaurante" asp-route-idproducto="@pro.IdProducto">Añadir al carrito</a>*@
                     <button data-restaurante-id="@pro.IdRestaurante" data-is-idproducto="@pro.IdProducto" onclick="addItem()" class="add-shop my-button but">Añadir a la cesta</button>
-                    <img src="~/images/si.png" class="my-image" style="width:40px; height: 40px;display:none" />
+                    <img src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/si.png" class="my-image" style="width:40px; height: 40px;display:none" />
                 }
                 else
                 {
                     if (idsProductos.Contains(pro.IdProducto))
                     {
-                        <img src="~/images/si.png" style="width:40px; height: 40px" />
+                        <img src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/si.png" style="width:40px; height: 40px" />
                     }
                     else
                     {
                         @*<button class="miBoton" value="@pro.IdProducto">Añadir Producto</button>*@
                         @* <a asp-controller="Carta" asp-action="Restaurante" asp-route-idrestaurante="@pro.IdRestaurante" asp-route-idproducto="@pro.IdProducto">Añadir al carrito</a>*@
                        <button data-restaurante-id="@pro.IdRestaurante" data-is-idproducto="@pro.IdProducto" onclick="addItem()" class="add-shop my-button but">Añadir a la cesta</button>
-                        <img src="~/images/si.png" class="my-image" style="width:40px; height: 40px;display:none" />
+                        <img src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/si.png" class="my-image" style="width:40px; height: 40px;display:none" />
                     }
 
                 }
@@ -97,7 +97,7 @@
                 var button = $(this);
                 var restauranteId = button.data("restaurante-id");
                 var isidproducto = button.data("is-idproducto");
-                $.get("/Carta/Restaurante", { idrestaurante: restauranteId, idproducto: isidproducto });
+                $.get("/Carta/SeleccionarProducto", { idrestaurante: restauranteId, idproducto: isidproducto });
                 // Agregar o eliminar una clase CSS para cambiar el color del ícono
 
             });
@@ -109,7 +109,7 @@
                 var button = $(this);
                 var restauranteId = button.data("restaurante-id");
                 var isFavorite = button.data("is-favorite");
-                $.get("/Carta/Restaurante", { idrestaurante: restauranteId, idfavorito: isFavorite });
+                $.get("/Carta/SeleccionarFavorito", { idrestaurante: restauranteId, idfavorito: isFavorite });
                 // Agregar o eliminar una clase CSS para cambiar el color del ícono
                 $(this).toggleClass("favorited");
             });

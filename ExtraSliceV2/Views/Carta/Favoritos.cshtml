@@ -27,7 +27,7 @@
                 <input class="form-control" type="hidden" name="precio" value="@pro.Precio" />
             </div>
 
-                <a asp-controller="Carta" asp-action="Favoritos" asp-route-ideliminar="@pro.IdProducto" class="delete-btn"><img src="~/images/remove.png" /></a>
+                <a asp-controller="Carta" asp-action="DeleteFavorito" asp-route-idproducto="@pro.IdProducto" class="delete-btn"><img src="https://storageextraslice.blob.core.windows.net/extrasliceblobs/remove.png" /></a>
         </div>
     }
    

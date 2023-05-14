@@ -1,41 +1,34 @@
-﻿using ExtraSliceV2.Extensions;
+﻿using ApiProyectoExtraSlice.Models;
+using ExtraSliceV2.Extensions;
 using ExtraSliceV2.Filters;
 using ExtraSliceV2.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MVCApiExtraSlice.Services;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Security.Claims;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ExtraSliceV2.Controllers
 {
     public class CartaController : Controller
     {
         private ServiceRestaurante service;
+        private ServiceCacheRedis serviceCache;
         private IMemoryCache memoryCache;
 
-        public CartaController(ServiceRestaurante service, IMemoryCache memoryCache)
+        public CartaController(ServiceRestaurante service, IMemoryCache memoryCache, ServiceCacheRedis serviceCache)
         {
             this.service = service;
             this.memoryCache = memoryCache;
+            this.serviceCache = serviceCache;
 
         }
-        //miedo
-        [AuthorizeUsuarios]
-        public async Task<IActionResult> PerfilUsuario()
-        {
-            string token = HttpContext.Session.GetString("TOKEN");
-            Usuario user = await this.service.GetPerfilUserAsync(token);
-            return View(user);
-        }
 
 
+        #region CATEGORIA
         public async Task<IActionResult> Index()
         {
             List<Categoria> categorias = new();
-               categorias = await this.service.GetAllCategoriasAsync();
+            categorias = await this.service.GetAllCategoriasAsync();
             foreach (var cat in categorias)
             {
                 if (cat.Imagen != null)
@@ -45,8 +38,10 @@ namespace ExtraSliceV2.Controllers
             }
             return View(categorias);
         }
+        #endregion
 
-        ////////////////////////////////////////////////////////////////Vistas Partiales RESTAURANTES
+
+        #region RESTAURANTE
 
         public async Task<IActionResult> _RestaurantesPartial()
         {
@@ -64,7 +59,7 @@ namespace ExtraSliceV2.Controllers
 
         public async Task<IActionResult> _ResaturanteOnCategoria(int idcategoria)
         {
-            
+
             List<Restaurante> restaurantes = new List<Restaurante>();
             restaurantes = await this.service.RestaurantesByCategoriaAsync(idcategoria); ;
             foreach (var res in restaurantes)
@@ -79,7 +74,7 @@ namespace ExtraSliceV2.Controllers
 
         public async Task<IActionResult> _RestaurantesByDinero(int dinero)
         {
-            
+
             List<Restaurante> restaurantes = new List<Restaurante>();
             restaurantes = await this.service.RestaurantesByMoneyAsync(dinero);
             foreach (var res in restaurantes)
@@ -111,147 +106,8 @@ namespace ExtraSliceV2.Controllers
             return PartialView("_ShowRestauranteByName", restaurante);
         }
 
-        /////////////////////////////////////////////////////////////////////////////
-
-
-        [AuthorizeUsuarios]
-        public async Task<IActionResult> CarritoProductos(int? ideliminar)
+        public async Task<IActionResult> Restaurante(int idrestaurante)
         {
-            //tenemos una coleccion de ids y necesitamos
-            //recuperamos los datos de session
-
-            //cambiar el int por modelo de cantidad y el id y así guardarlo
-            List<int> idsProductos = HttpContext.Session.GetObject<List<int>>("IdProductos");
-
-            if (idsProductos == null)
-            {
-                ViewData["MENSAJE"] = "No hay productos";
-                return View();
-            }
-            else
-            {
-                if (ideliminar != null)
-                {
-                    //ELIMINAMOS EL ELEMENTO QUE NOS HAN SOLICITADO
-                    idsProductos.Remove(ideliminar.Value);
-                    if (idsProductos.Count == 0)
-                    {
-                        HttpContext.Session.Remove("IdProductos");
-                    }
-                    else
-                    {
-                        //DEBEMOS ACTUALIZAR DE NUEVO SESSION
-                        HttpContext.Session.SetObject("IdProductos", idsProductos);
-                    }
-                }
-                string token = HttpContext.Session.GetString("TOKEN");
-                List<Producto> productosSession = await this.service.GetProductosFromSessionAsync(idsProductos, token);
-                return View(productosSession);
-
-            }
-        }
-
-        [HttpPost]
-        [AuthorizeUsuarios]
-        public async Task<IActionResult> CarritoProductos(int idcliente, List<int> idproducto, List<int> cantidad)
-        {
-            string token = HttpContext.Session.GetString("TOKEN");
-            List<Producto> productosSession = await this.service.GetProductosFromSessionAsync(idproducto, token);
-            string productostring = JsonConvert.SerializeObject(productosSession);
-
-            List<int> prodCantidad = cantidad;
-            string prodCanString = JsonConvert.SerializeObject(prodCantidad);
-
-            Usuario usuario = await this.service.GetPerfilUserAsync(token);
-            await this.service.SendMailAsync(usuario.Email, productostring, prodCanString);
-
-
-            await this.service.FinalizarPedidoAsync(idcliente, idproducto, cantidad, token);
-            HttpContext.Session.Remove("IdProductos");
-            return RedirectToAction("Index");
-        }
-
-
-
-        [AuthorizeUsuarios]
-        public IActionResult Favoritos(int? ideliminar)
-        {
-            List<Producto> productosFavoritos;
-            if (this.memoryCache.Get("FAVORITOS") == null)
-            {
-                productosFavoritos = new List<Producto>();
-            }
-            else
-            {
-                productosFavoritos = this.memoryCache.Get<List<Producto>>("FAVORITOS");
-                if (ideliminar != null)
-                {
-                    //ELIMINAMOS EL ELEMENTO QUE NOS HAN SOLICITADO
-                    Producto product = productosFavoritos.FirstOrDefault(p => p.IdProducto == ideliminar);
-                    productosFavoritos.Remove(product);
-                    if (productosFavoritos.Count == 0)
-                    {
-                        this.memoryCache.Remove("FAVORITOS");
-                        ViewData["mensaje"] = "No hay favoritos";
-                    }
-                    else
-                    {
-                        //DEBEMOS ACTUALIZAR DE NUEVO SESSION
-                        this.memoryCache.Set("FAVORITOS", productosFavoritos);
-                    }
-
-                }
-
-
-            }
-            return View(productosFavoritos);
-        }
-
-
-        public async Task<IActionResult> Restaurante(int idrestaurante, int? idproducto, int? idfavorito)
-        {
-            if (idfavorito != null)
-            {
-                List<Producto> productoFavoritos;
-                if (this.memoryCache.Get("FAVORITOS") == null)
-                {
-                    productoFavoritos = new List<Producto>();
-                }
-                else
-                {
-                    productoFavoritos = this.memoryCache.Get<List<Producto>>("FAVORITOS");
-                }
-                //BUSCAMOS PRODUCTO EN BBDD PARA ALMACENARLO EN CACHE
-                Producto producto = await this.service.FindProductoAsync(idfavorito.Value);
-
-
-                Producto productFav = productoFavoritos.FirstOrDefault(p => p.IdProducto == idfavorito);
-
-                if (productFav == null)
-                {
-                    productoFavoritos.Add(producto);
-                    //ALMACENAMOS LOS DATOS EN CACHE
-                    this.memoryCache.Set("FAVORITOS", productoFavoritos);
-                }
-
-            }
-
-            if (idproducto != null)
-            {
-                List<int> idsProductos;
-                if (HttpContext.Session.GetObject<List<int>>("IdProductos") == null)
-                {
-                    //creamos la lista para los ids
-                    idsProductos = new List<int>();
-                }
-                else
-                {
-                    idsProductos = HttpContext.Session.GetObject<List<int>>("IdProductos");
-                }
-                idsProductos.Add(idproducto.Value);
-                HttpContext.Session.SetObject("IdProductos", idsProductos);
-
-            }
 
             RestauranteProductos restauranteProductos = new RestauranteProductos
             {
@@ -266,8 +122,89 @@ namespace ExtraSliceV2.Controllers
 
             return View(restauranteProductos);
         }
+        #endregion
+
+        
+        #region CARRITO CACHE
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> SeleccionarProducto(int idproducto, int idrestaurante)
+        {
+            //BUSCAMOS EL PRODUCTO 
+            Producto producto = await this.service.FindProductoAsync(idproducto);
+            //ALMACENAMOS EL PRODUCTO EN CACHE REDIS
+            string token = HttpContext.Session.GetString("TOKEN");
+            this.serviceCache.AddProductoCarrito(producto, token);
+            return RedirectToAction("Restaurante", new { idrestaurante = idrestaurante });
+        }
+
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> CarritoProductos()
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            List<Producto> productosFavoritos = await this.serviceCache.GetProductosCarrito(token);
+            return View(productosFavoritos);
+        }
+
+        [HttpPost]
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> CarritoProductos(List<int> idproducto, List<int> cantidad)
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            List<Producto> productosSession = await this.service.GetProductosFromSessionAsync(idproducto, token);
+            string productostring = JsonConvert.SerializeObject(productosSession);
+
+            List<int> prodCantidad = cantidad;
+            string prodCanString = JsonConvert.SerializeObject(prodCantidad);
+
+            Usuario usuario = await this.service.GetPerfilUserAsync(token);
+            await this.service.SendMailAsync(usuario.Email, productostring, prodCanString);
 
 
+            await this.service.FinalizarPedidoAsync(usuario.IdUser, idproducto, cantidad, token);
+            this.serviceCache.DeleteAllCarrito(token);
+            return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> DeleteCarrito(int idproducto)
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            this.serviceCache.DeleteProductoCarrito(idproducto, token);
+            return RedirectToAction("CarritoProductos");
+        }
+
+        #endregion
+
+
+        #region FAVORITO CACHE
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> SeleccionarFavorito(int idfavorito)
+        {
+            //BUSCAMOS EL PRODUCTO DENTRO DEL XML PARA RECUPERARLO
+            Producto producto = await this.service.FindProductoAsync(idfavorito);
+            //ALMACENAMOS EL PRODUCTO EN CACHE REDIS
+            string token = HttpContext.Session.GetString("TOKEN");
+            this.serviceCache.AddProductoFavorito(producto, token);
+            ViewData["MENSAJE"] = "Producto almacenado en Favoritos";
+            return RedirectToAction("Index");
+        }
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> Favoritos()
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            List<Producto> productosFavoritos = await this.serviceCache.GetProductosFavoritos(token);
+            return View(productosFavoritos);
+        }
+
+        public async Task<IActionResult> DeleteFavorito(int idproducto)
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            this.serviceCache.DeleteProductoFavorito(idproducto, token);
+            return RedirectToAction("Favoritos");
+        }
+        #endregion
+
+
+        #region USER
 
         public IActionResult Register()
         {
@@ -275,16 +212,23 @@ namespace ExtraSliceV2.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(Usuario usuario)
+        public async Task<IActionResult> Register(UsuarioAux usuario)
         {
             await this.service.RegisterUserAsync(usuario.Nombre_cliente, usuario.Direccion, usuario.Telefono, usuario.Email, usuario.Password);
             return RedirectToAction("Index");
         }
 
+        //miedo
+        [AuthorizeUsuarios]
+        public async Task<IActionResult> PerfilUsuario()
+        {
+            string token = HttpContext.Session.GetString("TOKEN");
+            Usuario user = await this.service.GetPerfilUserAsync(token);
+            return View(user);
+        }
 
 
-
-
+        #endregion
 
     }
 }

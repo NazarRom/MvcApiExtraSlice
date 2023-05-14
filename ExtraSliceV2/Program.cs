@@ -28,6 +28,7 @@ builder.Services.AddAzureClients(factory =>
 
 // Add services to the container.
 builder.Services.AddTransient<ServiceRestaurante>();
+builder.Services.AddTransient<ServiceCacheRedis>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
@@ -41,6 +42,15 @@ KeyVaultSecret keyVaultSecret = await secretClient.GetSecretAsync("blobs");
 string azureKeys = keyVaultSecret.Value; ;
 BlobServiceClient blobServiceClient = new BlobServiceClient(azureKeys);
 builder.Services.AddTransient<BlobServiceClient>(x => blobServiceClient);
+
+//cache redis
+KeyVaultSecret keyVaultCache = await secretClient.GetSecretAsync("cacheredis");
+string cnnCacheRedis = keyVaultCache.Value;
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = cnnCacheRedis;
+});
+
 
 
 var app = builder.Build();
