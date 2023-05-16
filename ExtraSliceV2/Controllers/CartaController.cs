@@ -142,6 +142,10 @@ namespace ExtraSliceV2.Controllers
         {
             string token = HttpContext.Session.GetString("TOKEN");
             List<Producto> productosFavoritos = await this.serviceCache.GetProductosCarrito(token);
+            if (productosFavoritos == null)
+            {
+                ViewData["mensaje"] = "No hay productos";
+            }
             return View(productosFavoritos);
         }
 
